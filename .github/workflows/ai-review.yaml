@@ -1,0 +1,55 @@
+name: ai-review
+
+# Runs the different-provider reviewer agent against the candidate diff before
+# a human reviews. Flags unimplemented SHALLs, un-specced behavior, scenario
+# drift, and IAM over-scope. The reviewer does not approve or block the PR; it
+# posts findings as a check-run so the human reviewer sees them inline.
+
+on:
+  pull_request:
+    paths:
+      - "services/**"
+      - "openspec/**"
+      - "prompts/**"
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r tools/requirements.txt
+
+      - name: Resolve change-id from PR body
+        id: change
+        run: |
+          change_id=$(gh pr view ${{ github.event.pull_request.number }} \
+            --json body -q '.body' | \
+            grep -oE 'openspec/changes/[a-z0-9-]+' | head -1 | cut -d/ -f3)
+          echo "change_id=$change_id" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Materialize candidate diff
+        run: |
+          git diff origin/main...HEAD -- services/ > /tmp/candidate.diff
+
+      - name: Run reviewer
+        env:
+          REVIEWER_PROVIDER: ${{ vars.REVIEWER_PROVIDER }}   # e.g. "openai" or "google"
+          REVIEWER_API_KEY: ${{ secrets.REVIEWER_API_KEY }}
+        run: |
+          python tools/ai-reviewer/reviewer.py \
+            --change "${{ steps.change.outputs.change_id }}" \
+            --diff /tmp/candidate.diff \
+            | tee /tmp/review.json
+
+      - name: Attach findings as PR annotations
+        if: always()
+        run: |
+          jq -r '.findings[] | "::\(.severity) file=\(.file // "-"),line=\(.line // 0),title=\(.category)/\(.shall_id // "-")::\(.message)"' \
+            /tmp/review.json || echo "no findings or review did not run"

@@ -1,0 +1,44 @@
+# OPA bundle manifest.
+#
+# Describes which rego files + data files compose the OPA bundle that the
+# opa-gate.yaml workflow and the merge webhook consume. The bundle is
+# signed in production; signature verification is enforced in the gate
+# before any rule evaluates.
+
+name: niranow-spec-gate
+version: 11.3.0                  # bumps whenever any rego or schema changes
+revision: 2026-11-02T00:00:00Z
+
+rego:
+  - path: ../opa/spec_validation.rego
+    package: niranow.spec_validation
+  - path: ../opa/retrieval_filter.rego
+    package: niranow.retrieval_filter
+  - path: ../opa/eval_isolation.rego
+    package: niranow.eval_isolation
+  - path: ../opa/model_pinning.rego
+    package: niranow.model_pinning
+  - path: ../opa/pii_retention.rego
+    package: niranow.pii_retention
+  - path: ../opa/approval_routing.rego
+    package: niranow.approval_routing
+  - path: ../opa/debug_resources.rego
+    package: niranow.debug_resources
+  - path: ../opa/prompt_versioning.rego
+    package: niranow.prompt_versioning
+
+schemas:
+  - path: ../opa/schemas/resources.schema.json
+
+# Data bundle (built at CI time by tools/build_opa_bundle.py):
+#   - retired_shall_ids:   {id: {commit, pr}}
+#   - eval_sets:           {set_id: {isolation, source_documents, ...}}
+#   - index_contents:      {index_arn: [doc_id, ...]}
+#   - prompt_registry:     {prompt_id: {latest, versions: [...]}}
+#   - inference_profiles:  {profile_arn: {backing_model_arn, refreshed_at}}
+#   - grace_until:         {retrieval_filter: "<rfc3339>", ...}
+#   - ownership:           {capability: [team, ...]}
+
+signature:
+  # Provisioned by the platform team's KMS key. Verified before bundle load.
+  kms_key_arn: arn:aws:kms:us-east-1:111122223333:key/opa-bundle-signing-cmk

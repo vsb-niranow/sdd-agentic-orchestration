@@ -1,0 +1,4 @@
+pyyaml>=6.0
+jsonschema>=4.19
+requests>=2.31
+boto3>=1.34

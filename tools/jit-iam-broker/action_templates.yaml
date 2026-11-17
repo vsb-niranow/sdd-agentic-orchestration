@@ -1,0 +1,73 @@
+# Per-resource-type action templates. The JIT broker resolves these for each
+# ARN in the spec's resources: or debug_resources: block.
+#
+# Rules of the game:
+#   - No wildcards. Every action is explicit.
+#   - Least privilege: a capability that only queries an index does not get
+#     cluster-admin on OpenSearch.
+#   - Debug templates (access_level: read) never contain mutating actions.
+#     OPA's debug_resources.rego double-checks this by prefix at merge time.
+
+bedrock_model:
+  invoke:
+    - bedrock:InvokeModel
+    - bedrock:InvokeModelWithResponseStream
+
+bedrock_inference_profile:
+  invoke:
+    - bedrock:GetInferenceProfile
+    - bedrock:InvokeModel
+    - bedrock:InvokeModelWithResponseStream
+
+bedrock_invocation_logs:
+  read:
+    - bedrock:GetInvocationLog
+    - bedrock:ListInvocationLogs
+
+opensearch_collection:
+  read:
+    - aoss:APIAccessAll          # scoped to the collection ARN via Resource
+    - aoss:DescribeCollectionItems
+
+s3_bucket:
+  read_write:
+    - s3:GetObject
+    - s3:PutObject
+    - s3:DeleteObject
+    - s3:ListBucket
+  read:
+    - s3:GetObject
+    - s3:ListBucket
+
+dynamodb_table:
+  read_write:
+    - dynamodb:GetItem
+    - dynamodb:PutItem
+    - dynamodb:UpdateItem
+    - dynamodb:DeleteItem
+    - dynamodb:Query
+  read:
+    - dynamodb:GetItem
+    - dynamodb:Query
+
+kms_key:
+  use:
+    - kms:Decrypt
+    - kms:Encrypt
+    - kms:GenerateDataKey
+    - kms:DescribeKey
+
+cloudwatch_log_group:
+  write:
+    - logs:CreateLogStream
+    - logs:PutLogEvents
+  read:
+    - logs:GetLogEvents
+    - logs:FilterLogEvents
+    - logs:DescribeLogStreams
+    - logs:StartLiveTail
+
+xray:
+  read:
+    - xray:GetTraceSummaries
+    - xray:BatchGetTraces

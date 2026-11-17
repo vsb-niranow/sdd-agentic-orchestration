@@ -1,0 +1,27 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "TrustJITBrokerOnly",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::111122223333:role/jit-broker-prod"
+      },
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "StringEquals": {
+          "sts:ExternalId": "${aws:RequestTag/openspec_proposal_id}"
+        },
+        "StringLike": {
+          "aws:RequestTag/openspec_capability": "*"
+        },
+        "DateLessThan": {
+          "aws:CurrentTime": "${aws:RequestTag/ttl_expires_at}"
+        },
+        "Bool": {
+          "aws:MultiFactorAuthPresent": "true"
+        }
+      }
+    }
+  ]
+}

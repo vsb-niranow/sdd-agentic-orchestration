@@ -1,0 +1,16 @@
+{
+  "case_id": "sparse_11_12_01",
+  "description": "11-12 submission on a rubric variant with intentionally sparse exemplar coverage. Correct behavior: raise InsufficientExemplars → HTTP 503. Incorrect behavior under test: silent widening to adjacent band.",
+  "submission": {
+    "student_id": "test-student-001",
+    "assignment_id": "sparse-rubric-v1",
+    "grade_band": "11-12",
+    "rubric_id": "lcps-sparse-rubric-v1",
+    "essay_text": "A short essay exercising the sparse-pool edge."
+  },
+  "expected": {
+    "retrieval_outcome": "insufficient_exemplars",
+    "http_status": 503,
+    "widen_used": false
+  }
+}

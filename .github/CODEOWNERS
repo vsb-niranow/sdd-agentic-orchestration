@@ -1,0 +1,31 @@
+# CODEOWNERS
+#
+# GitHub uses this file to request reviews. The OPA `approval_routing` policy
+# cross-references the touched capability's owners against the merged PR's
+# approvals and refuses to mark the proposal "approved" without them — a
+# second line of defense against humans bypassing the Jira workflow.
+
+# Spec schema: full platform + privacy + security sign-off
+/openspec/specs/spec-schema/                 @niranow/platform @niranow/privacy @niranow/security
+/openspec/changes/*/specs/spec-schema/       @niranow/platform @niranow/privacy @niranow/security
+
+# Capability specs: capability owners
+/openspec/specs/essay-feedback/              @niranow/applied-ai @niranow/ela-product
+/openspec/specs/rubric-retrieval/            @niranow/applied-ai
+/openspec/specs/eval-harness/                @niranow/applied-ai @niranow/platform
+
+# OPA bundle: platform + security
+/policy/opa/                                 @niranow/platform @niranow/security
+
+# JIT IAM broker: security owns
+/tools/jit-iam-broker/                       @niranow/security @niranow/platform
+
+# Prompt registry + prompts: applied-AI owns, but privacy must approve any
+# change under prompts/ because PII handling is prompt-driven
+/prompts/                                    @niranow/applied-ai @niranow/privacy
+
+# Eval sets: applied-AI
+/evals/                                      @niranow/applied-ai
+
+# Everything else: platform default
+*                                            @niranow/platform

@@ -1,0 +1,74 @@
+name: prompt-delta-coupling
+
+# Enforces SS-SR-012: any PR that touches a prompt file must also touch the
+# owning capability's spec delta in the same commit. Introduced after the
+# 2026-08-10 prompt-drift hotfix incident.
+
+on:
+  pull_request:
+    paths:
+      - "prompts/**"
+      - "openspec/changes/**"
+      - "openspec/specs/**"
+
+jobs:
+  check-coupling:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+
+      - name: Enforce prompt↔spec coupling
+        run: |
+          python - <<'PY'
+          import pathlib, subprocess, sys, yaml
+
+          base_sha = subprocess.check_output(
+              ["git", "merge-base", "HEAD", "origin/main"], text=True
+          ).strip()
+          changed = subprocess.check_output(
+              ["git", "diff", "--name-only", f"{base_sha}...HEAD"], text=True
+          ).splitlines()
+
+          prompt_changes = [p for p in changed if p.startswith("prompts/") and p.endswith(".md")]
+          if not prompt_changes:
+              print("no prompt files touched; coupling check passes trivially")
+              sys.exit(0)
+
+          registry = yaml.safe_load(open("prompts/registry.yaml"))
+          # Map file path → owning capability.
+          file_to_cap = {}
+          for pid, meta in registry.items():
+              for entry in meta["versions"]:
+                  file_to_cap[f"prompts/{pid}_v{entry['v']}.md"] = meta["owner_capability"]
+
+          orphans = []
+          for p in prompt_changes:
+              cap = file_to_cap.get(p)
+              if cap is None:
+                  print(f"::warning file={p}::prompt file not in registry; "
+                        "add to prompts/registry.yaml with a version + sha256")
+                  continue
+              expected_delta_glob = f"openspec/changes/*/specs/{cap}/spec.md"
+              matched = [
+                  c for c in changed
+                  if c.startswith("openspec/changes/") and f"/specs/{cap}/spec.md" in c
+              ]
+              if not matched:
+                  orphans.append((p, cap))
+
+          if orphans:
+              for p, cap in orphans:
+                  print(f"::error file={p}::prompt-delta-coupling: orphan prompt change; "
+                        f"this PR must also modify {expected_delta_glob} "
+                        f"(owning capability '{cap}'). See "
+                        "docs/postmortems/2026-08-prompt-drift-hotfix.md.")
+              sys.exit(1)
+
+          print("prompt↔spec coupling: OK")
+          PY

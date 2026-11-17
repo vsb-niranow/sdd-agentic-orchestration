@@ -1,0 +1,27 @@
+# Eval set: grade_band_safety_v1
+#
+# Companion to rubric_alignment_v3. Specifically exercises the retrieval-filter
+# guardrail by constructing submissions where the retriever would be tempted to
+# cross grade bands (sparse candidate pool). Every case asserts that the
+# retriever either returns k candidates from the correct band OR raises
+# InsufficientExemplars. Silent widening is a case failure.
+#
+# Introduced as part of add-retrieval-filter-guardrail (2026-04).
+
+name: grade_band_safety_v1
+owner: "@niranow/applied-ai"
+isolation: strict
+metric: grade_band_adherence
+baseline:
+  run: "2026-04-18"
+  score: 1.0
+
+# Every case must pass. No regression tolerance; the whole point of this eval
+# set is zero tolerance for the failure mode that caused the April incident.
+floor_threshold: 1.0
+max_regression_tolerance: 0.0
+
+source_documents:
+  - synthetic:sparse:11-12:ex_s01
+  - synthetic:sparse:11-12:ex_s02
+  - synthetic:sparse:6-8:ex_s03

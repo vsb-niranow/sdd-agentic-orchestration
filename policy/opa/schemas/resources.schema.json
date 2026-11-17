@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://niranow.example.com/schemas/resources.schema.json",
+  "title": "Capability spec `resources:` block",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["model", "prompts", "retrieval", "storage", "observability", "ttl"],
+  "properties": {
+    "model": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["provider", "arn", "temperature", "max_output_tokens"],
+          "properties": {
+            "provider": { "type": "string", "enum": ["bedrock"] },
+            "arn": {
+              "type": "string",
+              "pattern": "^arn:aws:bedrock:[a-z0-9-]+::foundation-model/[a-z0-9.-]+-v\\d+:\\d+$"
+            },
+            "inference_profile_arn": {
+              "type": "string",
+              "pattern": "^arn:aws:bedrock:[a-z0-9-]+:\\d{12}:inference-profile/[a-z0-9.-]+$"
+            },
+            "temperature": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+            "max_output_tokens": { "type": "integer", "minimum": 1, "maximum": 8192 },
+            "stop_sequences": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      ]
+    },
+    "prompts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*@v\\d+$"
+          }
+        }
+      }
+    },
+    "retrieval": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["index", "embedding_model", "top_k", "min_similarity", "retrieval_filter"],
+          "properties": {
+            "index": {
+              "type": "string",
+              "pattern": "^arn:aws:aoss:[a-z0-9-]+:\\d{12}:collection/[a-z0-9-]+$"
+            },
+            "embedding_model": { "type": "string" },
+            "top_k": { "type": "integer", "minimum": 1, "maximum": 50 },
+            "min_similarity": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+            "retrieval_filter": {
+              "type": "object",
+              "required": ["kind"],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": ["grade_band_match", "tenant_match", "genre_match", "composite"]
+                },
+                "source_field": { "type": "string" },
+                "target_field": { "type": "string" },
+                "on_insufficient": {
+                  "oneOf": [
+                    { "type": "string", "enum": ["fail"] },
+                    {
+                      "type": "object",
+                      "required": ["widen_to"],
+                      "properties": { "widen_to": { "type": "string" } }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "storage": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "submissions_bucket": { "type": "string" },
+            "feedback_table": { "type": "string" },
+            "artifacts_bucket": { "type": "string" },
+            "submissions_kms_key": { "type": "string" },
+            "artifacts_kms_key": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "tenant_config_ref": { "type": ["object", "null"] },
+    "observability": {
+      "type": "object",
+      "required": ["cloudwatch_namespace"],
+      "properties": {
+        "cloudwatch_namespace": { "type": "string" },
+        "log_group": { "type": "string" }
+      }
+    },
+    "guardrails": { "type": ["object", "null"] },
+    "ttl": { "type": "string", "enum": ["30m", "1h", "2h", "4h"] }
+  }
+}

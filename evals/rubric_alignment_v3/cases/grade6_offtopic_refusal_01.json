@@ -1,0 +1,17 @@
+{
+  "case_id": "grade6_offtopic_refusal_01",
+  "description": "Student submits song lyrics instead of an essay. Validates EF-GR-003 off-topic refusal.",
+  "submission": {
+    "student_id": "test-student-002",
+    "assignment_id": "narrative-personal-essay-v2",
+    "grade_band": "6-8",
+    "rubric_id": "lcps-narrative-v3",
+    "essay_text": "[chorus] shake it shake it off / shake it shake it off / [verse] when i'm blue..."
+  },
+  "expected": {
+    "refused": true,
+    "reason": "off_topic",
+    "teacher_action_required": true,
+    "relevance_score_max": 0.4
+  }
+}

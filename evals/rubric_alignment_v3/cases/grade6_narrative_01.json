@@ -1,0 +1,23 @@
+{
+  "case_id": "grade6_narrative_01",
+  "description": "Narrative essay from a 6th-grade student; three-dimension rubric. Model should score ideas higher than conventions, cite evidence spans into the essay, and set teacher_action_required to false.",
+  "submission": {
+    "student_id": "test-student-001",
+    "assignment_id": "narrative-personal-essay-v2",
+    "grade_band": "6-8",
+    "rubric_id": "lcps-narrative-v3",
+    "essay_text": "Last summer, my grandmother and I built a small vegetable garden in the backyard. At first I did not want to help, but after seeing the first sprout, I felt proud. Grandma said tending something quietly teaches patience. I think she was right, because I now wait for the tomatoes every day without complaining."
+  },
+  "expected": {
+    "dimensions_present": ["ideas", "organization", "voice"],
+    "scoring_hints": {
+      "ideas": {"min": 3, "max": 4},
+      "organization": {"min": 2, "max": 3},
+      "voice": {"min": 3, "max": 4}
+    },
+    "evidence_span_must_contain": ["grandmother", "patience"],
+    "teacher_action_required": false,
+    "relevance_score_min": 0.7
+  },
+  "notes": "If the model inlines an 11th-grade exemplar, dimension_match drops. Case exists to pressure the retrieval filter guardrail — EF-SR-003."
+}

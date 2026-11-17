@@ -1,0 +1,46 @@
+# Eval set: rubric_alignment_v3
+#
+# Consumed by:
+#   - essay-feedback (eval.set_id: rubric_alignment_v3, threshold 0.82)
+#   - eval-harness (runs every PR that touches the above)
+#
+# Cases live under ./cases/*.json.
+# Source documents are the expected teacher-authored rubric exemplars the
+# cases simulate — listed here so the eval-isolation check can cross-ref
+# every production retrieval index.
+
+name: rubric_alignment_v3
+owner: "@niranow/applied-ai"
+isolation: strict
+metric: rubric_alignment_blended
+metric_weights:
+  dimension_match: 0.4
+  evidence_grounded: 0.3
+  fk_grade_appropriate: 0.2
+  refusal_precision: 0.1
+
+# Pre-aggregated baseline. Updated when a capability's threshold is bumped
+# via a tune-* proposal.
+baseline:
+  run: "2026-10-01"
+  score: 0.843
+  artifacts: s3://niranow-eval-artifacts/rubric_alignment_v3/baselines/2026-10-01_v6.json
+
+source_documents:
+  # These documents MUST NOT appear in any index referenced by a capability
+  # whose eval.isolation is `strict`. OPA and the retriever both enforce this.
+  - teacher_authored:narrative:6-8:ex_001
+  - teacher_authored:narrative:6-8:ex_002
+  - teacher_authored:narrative:9-10:ex_017
+  - teacher_authored:argument:9-10:ex_023
+  - teacher_authored:informative:11-12:ex_044
+  # ... 42 more omitted from this lab fork
+
+# Threshold is ADDITIONAL to the per-capability threshold. If the capability
+# spec declares 0.82 and this set's floor is 0.80, the harness uses max(0.82,
+# 0.80) = 0.82.
+floor_threshold: 0.80
+
+# Any capability that opts into regression tolerance ≥ this value is rejected.
+# Prevents "we'll just loosen the gate" PRs.
+max_regression_tolerance: 0.03

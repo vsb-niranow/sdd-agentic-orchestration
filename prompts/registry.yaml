@@ -1,0 +1,35 @@
+# Prompt registry.
+#
+# This is the single source of truth linking `prompt_id@vN` references in
+# capability specs to the prompt files on disk. The CI job
+# `.github/workflows/prompt-delta-coupling.yaml` and the lint rule
+# `prompt_registry_coherent.py` both key off this file.
+#
+# NEVER edit a prompt file without:
+#   1. Bumping the version suffix (v7 → v8), AND
+#   2. Updating the sha256 here, AND
+#   3. Opening a spec delta that moves the capability's `resources.prompts.id`
+#      reference to the new version in the SAME commit.
+#
+# Owners: capability that owns the prompt. Used by the coupling CI job to
+# resolve which capability's spec must be amended when a prompt changes.
+
+essay_feedback:
+  latest: 7
+  owner_capability: essay-feedback
+  versions:
+    - { v: 7, sha256: a1b2c3d4e5f60718293a4b5c6d7e8f9012345678901234567890abcdef123456, created: "2026-01-14" }
+    - { v: 6, sha256: deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef, created: "2025-11-02" }
+
+essay_feedback_v7_fallbacks:
+  latest: 1
+  owner_capability: essay-feedback
+  versions:
+    - { v: 1, sha256: cafebabecafebabecafebabecafebabecafebabecafebabecafebabecafebabe, created: "2026-04-18" }
+
+rubric_exemplar_rerank:
+  latest: 2
+  owner_capability: rubric-retrieval
+  versions:
+    - { v: 2, sha256: 0f0e0d0c0b0a09080706050403020100ffeeddccbbaa99887766554433221100, created: "2026-03-05" }
+    - { v: 1, sha256: 1122334455667788990011223344556677889900112233445566778899001122, created: "2025-12-20" }

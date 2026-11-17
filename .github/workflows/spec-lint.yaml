@@ -1,0 +1,25 @@
+name: spec-lint
+
+on:
+  pull_request:
+    paths:
+      - "openspec/**"
+      - "services/**"
+      - "prompts/**"
+      - "tools/spec-lint/**"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r tools/requirements.txt
+      - run: python tools/spec-lint/runner.py --json | tee /tmp/lint.json
+      - name: Annotate PR
+        if: always()
+        run: |
+          jq -r '.[] | "::\(.severity) file=\(.path),line=\(.line // 0),title=\(.rule_id)::\(.message)"' \
+            /tmp/lint.json

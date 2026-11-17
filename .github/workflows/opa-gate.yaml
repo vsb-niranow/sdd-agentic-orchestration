@@ -1,0 +1,78 @@
+name: opa-gate
+
+on:
+  pull_request:
+    paths:
+      - "openspec/**"
+      - "policy/opa/**"
+  push:
+    branches: [main]
+    paths:
+      - "openspec/changes/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write           # for OIDC → JIT broker
+
+jobs:
+  opa-evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OPA
+        run: |
+          curl -L -o opa https://openpolicyagent.org/downloads/v0.68.0/opa_linux_amd64_static
+          chmod +x opa
+          sudo mv opa /usr/local/bin/opa
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r tools/requirements.txt
+
+      - name: Build spec data bundle
+        # Parses every capability spec + every eval set into a JSON blob OPA reads.
+        run: |
+          python tools/build_opa_bundle.py --out /tmp/opa_bundle.json
+
+      - name: Evaluate every merged / changed proposal
+        run: |
+          for change_dir in openspec/changes/*/; do
+            change_id="$(basename "$change_dir")"
+            echo "::group::OPA evaluate $change_id"
+
+            # Build the merged post-delta spec in memory and evaluate.
+            python tools/opa_evaluate_change.py \
+              --change "$change_id" \
+              --bundle /tmp/opa_bundle.json \
+              --out "/tmp/opa_${change_id}.json"
+
+            # Fail if any deny messages fired.
+            if jq -e '.deny | length > 0' "/tmp/opa_${change_id}.json" >/dev/null; then
+              jq -r '.deny[] | "::error title=OPA/\(.rule)::\(.message)"' \
+                "/tmp/opa_${change_id}.json"
+              exit 1
+            fi
+            echo "::endgroup::"
+          done
+
+      - name: On merge, trigger Jira-MCP
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+          JIRA_PROJECT_KEY: ${{ vars.JIRA_PROJECT_KEY }}
+        run: |
+          # Fire-and-forget: the Jira-MCP server lives outside CI; this step
+          # just POSTs the change-id to its webhook.
+          for change_dir in $(git diff --name-only ${{ github.event.before }} ${{ github.sha }} \
+                               | grep '^openspec/changes/' | cut -d/ -f3 | sort -u); do
+            curl -fsS -X POST "${{ vars.JIRA_MCP_WEBHOOK }}" \
+              -H "Authorization: Bearer $JIRA_TOKEN" \
+              -H "content-type: application/json" \
+              -d "{\"change_id\":\"$change_dir\"}"
+          done
